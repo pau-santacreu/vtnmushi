@@ -9,6 +9,7 @@ from app.models.user import User
 from app.schemas.recording import TranscriptionResponse
 from app.core.exceptions import AudioValidationException
 from app.api.deps import get_current_user
+from app.services.transcription_service import transcription_service
 from app.config import settings
 
 router = APIRouter(prefix="/transcribe", tags=["Transcription"])
@@ -32,21 +33,23 @@ async def transcribe_audio(
             f"Format '{ext}' not allowed. Use: {', '.join(settings.allowed_formats_list)}"
         )
 
-    # Validar mida
+    # Llegir contingut
     content = await audio_file.read()
     if len(content) > settings.max_audio_size_bytes:
         raise AudioValidationException(
             f"File too large. Maximum: {settings.MAX_AUDIO_SIZE_MB}MB"
         )
 
-    # TODO: Integrar Faster-Whisper aquí (Bloc 3)
-    transcription_text = "[Transcripció pendent — Whisper no integrat encara]"
-    confidence = None
-    duration = None
+    # Transcriure des de bytes (sense guardar permanentment)
+    result = transcription_service.transcribe_bytes(
+        audio_bytes=content,
+        language=language,
+        file_ext=ext,
+    )
 
     return TranscriptionResponse(
-        text=transcription_text,
-        language=language,
-        confidence=confidence,
-        duration_seconds=duration,
+        text=result.text,
+        language=result.language,
+        confidence=result.confidence,
+        duration_seconds=result.duration_seconds,
     )

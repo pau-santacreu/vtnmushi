@@ -4,11 +4,10 @@ Gestió de gravacions dins d'una nota.
 """
 
 import os
-import shutil
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
 from app.models.user import User
@@ -19,6 +18,7 @@ from app.schemas.note import NoteDetailResponse
 from app.core.exceptions import NotFoundException
 from app.api.deps import get_current_user
 from app.api.v1.notes import _save_audio_file
+from app.services.transcription_service import transcription_service
 
 router = APIRouter(prefix="/notes/{note_id}/recordings", tags=["Recordings"])
 
@@ -49,31 +49,36 @@ async def add_recording(
     # Guardar àudio
     file_path, rec_id = _save_audio_file(current_user.id, note.id, audio_file)
 
-    # TODO: Integrar Faster-Whisper aquí (Bloc 3)
-    transcription_text = ""
-    confidence = None
-    duration = None
+    # Transcriure amb Faster-Whisper
+    result = transcription_service.transcribe(file_path, language=language)
 
     # Crear recording
     recording = Recording(
         id=UUID(rec_id),
         note_id=note.id,
         file_path=file_path,
-        transcription=transcription_text,
-        confidence=confidence,
-        duration_seconds=duration,
+        transcription=result.text,
+        confidence=result.confidence,
+        duration_seconds=result.duration_seconds,
     )
     db.add(recording)
 
     # Append transcripció al contingut de la nota
-    if transcription_text:
+    if result.text:
         if note.content:
-            note.content += f"\n\n{transcription_text}"
+            note.content += f"\n\n{result.text}"
         else:
-            note.content = transcription_text
+            note.content = result.text
 
     db.commit()
-    db.refresh(note)
+
+    # Recarregar amb relacions
+    note = (
+        db.query(Note)
+        .options(joinedload(Note.category), joinedload(Note.recordings))
+        .filter(Note.id == note.id)
+        .first()
+    )
 
     return note
 
@@ -138,7 +143,6 @@ async def delete_recording(
     if not recording:
         raise NotFoundException("Recording")
 
-    # Eliminar fitxer del disc
     if os.path.exists(recording.file_path):
         os.remove(recording.file_path)
 

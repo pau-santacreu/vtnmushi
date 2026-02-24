@@ -1,0 +1,55 @@
+services:
+  api:
+    build: .
+    container_name: voicenotes-api
+    restart: unless-stopped
+    ports:
+      - "8069:8000"
+    environment:
+      - DATABASE_URL=postgresql://voicenotes:${POSTGRES_PASSWORD}@db:5432/voicenotes
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_ACCESS_TOKEN_EXPIRE_MINUTES=${JWT_ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      - JWT_REFRESH_TOKEN_EXPIRE_DAYS=${JWT_REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      - WHISPER_MODEL=${WHISPER_MODEL:-large-v3}
+      - WHISPER_DEVICE=${WHISPER_DEVICE:-cuda}
+      - WHISPER_COMPUTE_TYPE=${WHISPER_COMPUTE_TYPE:-float16}
+      - DEFAULT_LANGUAGE=${DEFAULT_LANGUAGE:-ca}
+      - MAX_AUDIO_SIZE_MB=${MAX_AUDIO_SIZE_MB:-50}
+      - ALLOWED_AUDIO_FORMATS=${ALLOWED_AUDIO_FORMATS:-wav,mp3,ogg,m4a,webm,flac}
+    volumes:
+      - ./uploads:/app/uploads
+      - whisper-cache:/root/.cache    # Cache del model Whisper (no re-descarregar)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    container_name: voicenotes-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=voicenotes
+      - POSTGRES_USER=voicenotes
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"   # Port extern 5433 per no col·lidir amb altres PG
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U voicenotes"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+    name: voicenotes-pgdata
+  whisper-cache:
+    name: voicenotes-whisper-cache
