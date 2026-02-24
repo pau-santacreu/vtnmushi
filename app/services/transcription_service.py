@@ -93,10 +93,10 @@ class TranscriptionService:
         # Calcular confiança mitjana
         confidence = None
         if all_segments:
-            avg_log_prob = sum(s.avg_log_prob for s in all_segments) / len(all_segments)
+            avg_logprob = sum(s.avg_logprob for s in all_segments) / len(all_segments)
             # Convertir log probability a percentatge (aproximat)
             import math
-            confidence = round(math.exp(avg_log_prob), 4)
+            confidence = round(math.exp(avg_logprob), 4)
 
         # Durada total
         duration = round(info.duration, 2) if info.duration else None
