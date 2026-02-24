@@ -12,6 +12,9 @@ class Settings(BaseSettings):
 
     # --- Database ---
     DATABASE_URL: str = "postgresql://voicenotes:password@db:5432/voicenotes"
+    POSTGRES_DB: str = "voicenotes"
+    POSTGRES_USER: str = "voicenotes"
+    POSTGRES_PASSWORD: str = "password"
 
     # --- JWT Authentication ---
     JWT_SECRET_KEY: str = "canvia-aixo-per-un-secret-segur"
@@ -40,19 +43,17 @@ class Settings(BaseSettings):
 
     @property
     def allowed_formats_list(self) -> list[str]:
-        """Retorna la llista de formats permesos."""
         return [f.strip() for f in self.ALLOWED_AUDIO_FORMATS.split(",")]
 
     @property
     def max_audio_size_bytes(self) -> int:
-        """Retorna la mida màxima d'àudio en bytes."""
         return self.MAX_AUDIO_SIZE_MB * 1024 * 1024
 
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = True
+        extra = "ignore"
 
 
-# Singleton — importar des de qualsevol lloc amb: from app.config import settings
 settings = Settings()

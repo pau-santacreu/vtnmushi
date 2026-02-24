@@ -4,10 +4,11 @@
 # Executa migracions i arrenca l'API
 # ============================================
 
+#!/bin/bash
 set -e
 
 echo "🔄 Running database migrations..."
-python -m alembic upgrade head
+alembic upgrade head
 
 echo "🚀 Starting VoiceNotes API..."
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+uvicorn app.main:app --host 0.0.0.0 --port 8000
