@@ -1,10 +1,4 @@
 #!/bin/bash
-# ============================================
-# VoiceNotes — Startup Script
-# Executa migracions i arrenca l'API
-# ============================================
-
-#!/bin/bash
 set -e
 
 echo "🔄 Running database migrations..."
