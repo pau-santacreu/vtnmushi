@@ -19,6 +19,14 @@ export default function NewNoteModal({ onClose, onCreated, categories }) {
 
   const submit = async () => {
     if (!title.trim()) { setError('Escriu un títol'); return }
+
+    // Si encara estem gravant, parem i esperem el blob
+    if (rec.recording) {
+      rec.stop()
+      setError('Gravació aturada. Prem "Crear nota" de nou per enviar.')
+      return
+    }
+
     setError('')
     setSubmitting(true)
     try {
@@ -137,7 +145,7 @@ export default function NewNoteModal({ onClose, onCreated, categories }) {
         <div className="modal-footer">
           <button className="btn-secondary" onClick={onClose}>Cancel·lar</button>
           <button className="btn-primary" onClick={submit} disabled={submitting}>
-            {submitting ? 'Transcrivint...' : 'Crear nota'}
+            {submitting ? 'Transcrivint...' : rec.recording ? 'Aturar i crear' : 'Crear nota'}
           </button>
         </div>
       </div>

@@ -2,10 +2,10 @@
 VoiceNotes — Main Application
 Entry point de l'API FastAPI.
 """
-
+import os
+from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 from app.config import settings
 from app.api.v1 import router as v1_router
 
@@ -25,6 +25,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # Registrar routers
 app.include_router(v1_router)
@@ -48,3 +49,7 @@ async def health():
         "whisper_model": settings.WHISPER_MODEL,
         "whisper_device": settings.WHISPER_DEVICE,
     }
+
+
+os.makedirs("uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")

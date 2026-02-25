@@ -6,6 +6,7 @@ import AuthScreen from './components/AuthScreen'
 import NotesList from './components/NotesList'
 import NoteDetail from './components/NoteDetail'
 import NewNoteModal from './components/NewNoteModal'
+import CategoryManager from './components/CategoryManager'
 
 export default function App() {
   const [user, setUser] = useState(null)
@@ -13,6 +14,7 @@ export default function App() {
   const [cats, setCats] = useState([])
   const [sel, setSel] = useState(null)
   const [showNew, setShowNew] = useState(false)
+  const [showCats, setShowCats] = useState(false)
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [filterCat, setFilterCat] = useState('')
@@ -130,23 +132,28 @@ export default function App() {
       <main className="app-main">
         {sel ? (
           <NoteDetail note={sel} onBack={() => setSel(null)}
-            onUpdated={onUpdated} onDeleted={onDeleted} />
+            onUpdated={onUpdated} onDeleted={onDeleted} categories={cats} />
         ) : (
           <>
-            {cats.length > 0 && (
-              <div className="category-chips">
-                <button className={`chip ${!filterCat ? 'active' : ''}`}
-                  onClick={() => setFilterCat('')}>Totes</button>
-                {cats.map((c) => (
-                  <button key={c.id}
-                    className={`chip ${filterCat === c.id ? 'active' : ''}`}
-                    onClick={() => setFilterCat(filterCat === c.id ? '' : c.id)}
-                    style={filterCat === c.id ? { background: c.color || 'var(--accent)', color: '#fff' } : {}}>
-                    {c.name}
-                  </button>
-                ))}
-              </div>
-            )}
+            <div className="category-chips">
+              {cats.length > 0 && (
+                <>
+                  <button className={`chip ${!filterCat ? 'active' : ''}`}
+                    onClick={() => setFilterCat('')}>Totes</button>
+                  {cats.map((c) => (
+                    <button key={c.id}
+                      className={`chip ${filterCat === c.id ? 'active' : ''}`}
+                      onClick={() => setFilterCat(filterCat === c.id ? '' : c.id)}
+                      style={filterCat === c.id ? { background: c.color || 'var(--accent)', color: '#fff' } : {}}>
+                      {c.name}
+                    </button>
+                  ))}
+                </>
+              )}
+              <button className="chip-add" onClick={() => setShowCats(true)}>
+                {Icons.plus({ size: 14 })} Categories
+              </button>
+            </div>
             <NotesList notes={filtered} onSelect={onSelect} searchTerm={search} />
             <button className="fab" onClick={() => setShowNew(true)}>
               {Icons.plus({ size: 28 })}
@@ -157,6 +164,11 @@ export default function App() {
 
       {showNew && (
         <NewNoteModal onClose={() => setShowNew(false)} onCreated={onCreated} categories={cats} />
+      )}
+
+      {showCats && (
+        <CategoryManager categories={cats} onClose={() => setShowCats(false)}
+          onUpdated={() => { loadCats(); loadNotes() }} />
       )}
     </div>
   )

@@ -4,16 +4,18 @@ import Icons from './Icons'
 import AudioPlayer from './AudioPlayer'
 import { formatTime, formatDate } from '../utils'
 
-export default function NoteDetail({ note, onBack, onUpdated, onDeleted }) {
+export default function NoteDetail({ note, onBack, onUpdated, onDeleted, categories = [] }) {
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState(note.title)
   const [content, setContent] = useState(note.content || '')
+  const [categoryId, setCategoryId] = useState(note.category?.id || '')
   const [saving, setSaving] = useState(false)
   const taRef = useRef(null)
 
   useEffect(() => {
     setTitle(note.title)
     setContent(note.content || '')
+    setCategoryId(note.category?.id || '')
   }, [note])
 
   useEffect(() => {
@@ -27,7 +29,13 @@ export default function NoteDetail({ note, onBack, onUpdated, onDeleted }) {
   const save = async () => {
     setSaving(true)
     try {
-      const u = await api.put(`/notes/${note.id}`, { title, content })
+      const body = { title, content }
+      const newCatId = categoryId || null
+      const oldCatId = note.category?.id || null
+      if (newCatId !== oldCatId) {
+        body.category_id = newCatId
+      }
+      const u = await api.put(`/notes/${note.id}`, body)
       onUpdated(u)
       setEditing(false)
     } catch (e) {
@@ -78,6 +86,17 @@ export default function NoteDetail({ note, onBack, onUpdated, onDeleted }) {
           <>
             <input className="detail-title-edit" value={title}
               onChange={(e) => setTitle(e.target.value)} placeholder="Títol" />
+
+            <div className="input-group" style={{ marginBottom: 16 }}>
+              <label>Categoria</label>
+              <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+                <option value="">Sense categoria</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+
             <textarea ref={taRef} className="detail-text-edit" value={content}
               onChange={(e) => {
                 setContent(e.target.value)
@@ -94,6 +113,11 @@ export default function NoteDetail({ note, onBack, onUpdated, onDeleted }) {
                 <span className="category-badge"
                   style={{ background: note.category.color || 'var(--accent)' }}>
                   {note.category.name}
+                </span>
+              )}
+              {!note.category && (
+                <span className="category-badge" style={{ background: 'var(--text-3)' }}>
+                  Sense categoria
                 </span>
               )}
               <span className="detail-date">{formatDate(note.updated_at)}</span>
